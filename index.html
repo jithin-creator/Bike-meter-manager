@@ -5,151 +5,255 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Bike Digital Meter Manager</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
-body{font-family:Arial;margin:0;background:#eef2f5;color:#172b36}
-header{background:#123b52;color:white;padding:18px}
-main{padding:14px;max-width:700px;margin:auto}
-.card{background:white;padding:15px;margin:12px 0;border-radius:12px}
-input,select,textarea,button{box-sizing:border-box;width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #bbb;font-size:16px}
-button{background:#176b87;color:white;border:0;font-weight:bold}
-.secondary{background:#526875}
-.item{border-bottom:1px solid #ddd;padding:12px 0}
-small{color:#526875}
+body{font-family:Arial;margin:0;background:#f1f4f8;color:#172033}
+header{background:#123d65;color:white;padding:18px;text-align:center}
+main{padding:14px;max-width:650px;margin:auto}
+.card{background:white;padding:15px;margin:12px 0;border-radius:12px;box-shadow:0 2px 8px #0001}
+input,button{box-sizing:border-box;width:100%;padding:12px;margin:6px 0;border:1px solid #bbb;border-radius:7px;font-size:16px}
+button{background:#145b91;color:white;border:0;font-weight:bold}
+button.secondary{background:#526579}
+button.danger{background:#b52c35}
+.customer{border-bottom:1px solid #ddd;padding:12px 0}
+img.preview{width:100%;max-height:180px;object-fit:contain;margin-top:8px}
+#video{width:100%;display:none;background:#111}
+#qrcode{margin:12px auto;width:fit-content}
+.small{font-size:13px;color:#555}
 </style>
 </head>
 <body>
 <header>
 <h2>Bike Digital Meter Manager</h2>
-<p>Customer • Meter • Repair Records</p>
-<button onclick="toggleLang()">മലയാളം / English</button>
+<p>ബൈക്ക് ഡിജിറ്റൽ മീറ്റർ കസ്റ്റമർ മാനേജർ</p>
 </header>
+
 <main>
 <div class="card">
-<h3 id="formTitle">Add New Meter</h3>
-<form id="form">
-<input id="name" placeholder="Customer Name" required>
-<input id="phone" placeholder="Mobile Number">
-<input id="bike" placeholder="Bike Model" required>
-<input id="company" placeholder="Meter / PCB Company">
-<input id="fault" placeholder="Fault Details">
-<select id="status">
-<option>Received</option>
-<option>Pending</option>
-<option>Repairing</option>
-<option>Ready</option>
-<option>Delivered</option>
-</select>
-<input id="rack" placeholder="Rack Location">
-<input id="amount" type="number" placeholder="Repair Amount ₹">
-<input id="date" type="date">
-<textarea id="notes" placeholder="Repair Notes"></textarea>
-<button type="submit" id="save">Save Meter</button>
-</form>
+<h3>Customer Registration / കസ്റ്റമർ രജിസ്ട്രേഷൻ</h3>
+<input id="name" placeholder="Customer Name / പേര്">
+<input id="phone" placeholder="Mobile Number / മൊബൈൽ നമ്പർ" type="tel">
+<input id="bike" placeholder="Bike Model / ബൈക്ക് മോഡൽ">
+<input id="pcb" placeholder="Meter / PCB Company">
+<input id="fault" placeholder="Meter Fault / തകരാർ">
+<input id="rack" placeholder="Rack Location / റാക്ക് സ്ഥലം">
+
+<label>Meter Photo / മീറ്റർ ഫോട്ടോ</label>
+<input id="meterPhoto" type="file" accept="image/*" capture="environment">
+
+<label>PCB Photo / PCB ഫോട്ടോ</label>
+<input id="pcbPhoto" type="file" accept="image/*" capture="environment">
+
+<button onclick="saveCustomer()">SAVE CUSTOMER / സേവ് ചെയ്യുക</button>
+<p id="message"></p>
 </div>
+
 <div class="card">
-<h3 id="searchTitle">Search Customer / Meter</h3>
-<input id="search" placeholder="Name, phone, bike, ID or rack">
-<div id="records"></div>
+<h3>QR Code Scanner / QR സ്കാനർ</h3>
+<button onclick="startScanner()">OPEN CAMERA & SCAN QR</button>
+<video id="video" playsinline></video>
+<button class="secondary" onclick="stopScanner()">STOP CAMERA</button>
+<p id="scanMessage" class="small">QR സ്കാൻ ചെയ്യാൻ ക്യാമറ അനുവദിക്കുക.</p>
 </div>
+
 <div class="card">
-<h3>Backup / Restore</h3>
-<button onclick="backup()">Download Backup</button>
-<input type="file" id="restoreFile" accept=".json">
-<button onclick="restore()">Restore Backup</button>
+<h3>Customer QR Code</h3>
+<input id="qrId" placeholder="Customer ID (ഉദാ: DM-000001)">
+<button onclick="showQR()">GENERATE QR CODE</button>
+<div id="qrcode"></div>
+</div>
+
+<div class="card">
+<h3>Search Customer / കസ്റ്റമറെ തിരയുക</h3>
+<input id="search" placeholder="Name, Phone, ID or Bike" oninput="showCustomers()">
+<div id="customers"></div>
 </div>
 </main>
+
 <script>
-let records=JSON.parse(localStorage.getItem("meters")||"[]");
-let mal=false;
-const $=id=>document.getElementById(id);
-function saveData(){
- localStorage.setItem("meters",JSON.stringify(records));
- showRecords();
-}
-function showRecords(){
- let q=$("search").value.toLowerCase();
- $("records").innerHTML="";
- records.filter(r=>Object.values(r).join(" ").toLowerCase().includes(q))
- .forEach(r=>{
-  let div=document.createElement("div");
-  div.className="item";
-  let title=document.createElement("b");
-  title.textContent=r.id+" - "+r.name;
-  let details=document.createElement("p");
-  details.textContent="Phone: "+r.phone+" | Bike: "+r.bike+
-  " | Status: "+r.status+" | Rack: "+r.rack;
-  let fault=document.createElement("small");
-  fault.textContent="Fault: "+r.fault;
-  let edit=document.createElement("button");
-  edit.textContent="Edit";
-  edit.onclick=()=>editRecord(r.id);
-  let del=document.createElement("button");
-  del.textContent="Delete";
-  del.className="secondary";
-  del.onclick=()=>{
-   if(confirm("Delete this record?")){
-    records=records.filter(x=>x.id!==r.id);saveData();
-   }
+const DB_NAME="BikeMeterManagerDB";
+let db;
+let scannerStream=null;
+let scanning=false;
+
+function openDB(){
+ return new Promise((resolve,reject)=>{
+  const request=indexedDB.open(DB_NAME,1);
+  request.onupgradeneeded=()=>{
+   const d=request.result;
+   if(!d.objectStoreNames.contains("customers"))
+    d.createObjectStore("customers",{keyPath:"id"});
   };
-  div.append(title,details,fault,edit,del);
-  $("records").append(div);
+  request.onsuccess=()=>{db=request.result;resolve(db)};
+  request.onerror=()=>reject(request.error);
  });
 }
-$("form").onsubmit=e=>{
- e.preventDefault();
- let id=window.editingId||("DM-"+String(Date.now()).slice(-8));
- let old=records.find(r=>r.id===id);
- let data={id,name:$("name").value,phone:$("phone").value,
- bike:$("bike").value,company:$("company").value,
- fault:$("fault").value,status:$("status").value,
- rack:$("rack").value,amount:$("amount").value,
- date:$("date").value,notes:$("notes").value};
- if(old)records=records.map(r=>r.id===id?data:r);
- else records.unshift(data);
- window.editingId=null;
- $("form").reset();$("save").textContent="Save Meter";
- saveData();
- alert("Meter saved: "+id);
-};
-function editRecord(id){
- let r=records.find(x=>x.id===id);
- if(!r)return;
- window.editingId=id;
- ["name","phone","bike","company","fault","status","rack","amount","date","notes"]
- .forEach(k=>$(k).value=r[k]||"");
- $("save").textContent="Update Meter";
- window.scrollTo(0,0);
+
+function store(mode="readonly"){
+ return db.transaction("customers",mode).objectStore("customers");
 }
-$("search").oninput=showRecords;
-function backup(){
- let blob=new Blob([JSON.stringify(records,null,2)],{type:"application/json"});
- let a=document.createElement("a");
- a.href=URL.createObjectURL(blob);
- a.download="BikeMeterBackup.json";a.click();
- URL.revokeObjectURL(a.href);
+
+function getAll(){
+ return new Promise((resolve,reject)=>{
+  const r=store().getAll();
+  r.onsuccess=()=>resolve(r.result);
+  r.onerror=()=>reject(r.error);
+ });
 }
-function restore(){
- let file=$("restoreFile").files[0];
- if(!file){alert("Choose backup file");return;}
- let reader=new FileReader();
- reader.onload=()=>{
- try{
- let data=JSON.parse(reader.result);
- if(!Array.isArray(data))throw Error();
- if(confirm("Replace current records with backup?")){
- records=data;saveData();alert("Backup restored");
- }
- }catch(e){alert("Invalid backup file");}
+
+async function saveCustomer(){
+ const name=document.getElementById("name").value.trim();
+ if(!name){alert("Customer name നൽകുക");return;}
+
+ const all=await getAll();
+ const id="DM-"+String(all.length+1).padStart(6,"0");
+
+ const meterFile=document.getElementById("meterPhoto").files[0]||null;
+ const pcbFile=document.getElementById("pcbPhoto").files[0]||null;
+
+ const customer={
+  id:id,
+  name:name,
+  phone:document.getElementById("phone").value,
+  bike:document.getElementById("bike").value,
+  pcb:document.getElementById("pcb").value,
+  fault:document.getElementById("fault").value,
+  rack:document.getElementById("rack").value,
+  date:new Date().toLocaleDateString(),
+  meterPhoto:meterFile,
+  pcbPhoto:pcbFile
  };
- reader.readAsText(file);
+
+ const r=store("readwrite").add(customer);
+ r.onsuccess=()=>{
+  document.getElementById("message").innerText="Saved! Customer ID: "+id;
+  document.getElementById("qrId").value=id;
+  document.querySelectorAll("main input").forEach(x=>{
+   if(x.id!=="search")x.value="";
+  });
+  showCustomers();
+  showQR();
+ };
+ r.onerror=()=>alert("Save failed. Try again.");
 }
-function toggleLang(){
- mal=!mal;
- $("formTitle").textContent=mal?"പുതിയ മീറ്റർ ചേർക്കുക":"Add New Meter";
- $("searchTitle").textContent=mal?"കസ്റ്റമറെ തിരയുക":"Search Customer / Meter";
- $("save").textContent=mal?"സേവ് ചെയ്യുക":"Save Meter";
+
+async function showCustomers(){
+ const all=await getAll();
+ const q=document.getElementById("search").value.toLowerCase();
+ const box=document.getElementById("customers");
+ box.innerHTML="";
+ const results=all.filter(c=>
+  [c.id,c.name,c.phone,c.bike].some(v=>(v||"").toLowerCase().includes(q))
+ );
+ results.reverse().forEach(c=>{
+  const div=document.createElement("div");
+  div.className="customer";
+  const title=document.createElement("b");
+  title.textContent=c.id+" - "+c.name;
+  div.appendChild(title);
+  const info=document.createElement("p");
+  info.textContent="Phone: "+c.phone+" | Bike: "+c.bike+" | Fault: "+c.fault;
+  div.appendChild(info);
+
+  if(c.meterPhoto){
+   const img=document.createElement("img");
+   img.className="preview";
+   img.src=URL.createObjectURL(c.meterPhoto);
+   div.appendChild(img);
+  }
+  if(c.pcbPhoto){
+   const img=document.createElement("img");
+   img.className="preview";
+   img.src=URL.createObjectURL(c.pcbPhoto);
+   div.appendChild(img);
+  }
+  const qr=document.createElement("button");
+  qr.textContent="SHOW CUSTOMER QR";
+  qr.onclick=()=>{document.getElementById("qrId").value=c.id;showQR()};
+  div.appendChild(qr);
+
+  const del=document.createElement("button");
+  del.className="danger";
+  del.textContent="DELETE CUSTOMER";
+  del.onclick=()=>deleteCustomer(c.id);
+  div.appendChild(del);
+  box.appendChild(div);
+ });
 }
-showRecords();
+
+function deleteCustomer(id){
+ if(!confirm("Delete this customer?"))return;
+ const r=store("readwrite").delete(id);
+ r.onsuccess=showCustomers;
+}
+
+function showQR(){
+ const id=document.getElementById("qrId").value.trim();
+ if(!id){alert("Customer ID നൽകുക");return;}
+ const box=document.getElementById("qrcode");
+ box.innerHTML="";
+ if(typeof QRCode==="undefined"){
+  box.innerText="QR library load ചെയ്യാൻ internet ആവശ്യമാണ്.";
+  return;
+ }
+ new QRCode(box,{text:id,width:200,height:200});
+}
+
+async function startScanner(){
+ const video=document.getElementById("video");
+ const msg=document.getElementById("scanMessage");
+
+ if(!("BarcodeDetector" in window)){
+  msg.innerText="ഈ Chrome version-ൽ QR scanning support ഇല്ല. Chrome update ചെയ്യുക.";
+  return;
+ }
+ try{
+  const detector=new BarcodeDetector({formats:["qr_code"]});
+  scannerStream=await navigator.mediaDevices.getUserMedia({
+   video:{facingMode:"environment"}
+  });
+  video.srcObject=scannerStream;
+  video.style.display="block";
+  await video.play();
+  scanning=true;
+  msg.innerText="QR Code ക്യാമറയ്ക്ക് മുന്നിൽ കാണിക്കുക.";
+
+  async function scan(){
+   if(!scanning)return;
+   try{
+    const codes=await detector.detect(video);
+    if(codes.length){
+     const value=codes[0].rawValue;
+     document.getElementById("search").value=value;
+     msg.innerText="Scanned: "+value;
+     stopScanner();
+     showCustomers();
+     return;
+    }
+   }catch(e){}
+   if(scanning)requestAnimationFrame(scan);
+  }
+  scan();
+ }catch(e){
+  msg.innerText="Camera തുറക്കാനായില്ല. Camera permission അനുവദിക്കുക.";
+ }
+}
+
+function stopScanner(){
+ scanning=false;
+ if(scannerStream){
+  scannerStream.getTracks().forEach(t=>t.stop());
+  scannerStream=null;
+ }
+ const video=document.getElementById("video");
+ video.pause();
+ video.srcObject=null;
+ video.style.display="none";
+}
+
+openDB().then(showCustomers).catch(()=>{
+ alert("Database തുറക്കാനായില്ല. Chrome-ൽ വീണ്ടും ശ്രമിക്കുക.");
+});
 </script>
 </body>
 </html>
