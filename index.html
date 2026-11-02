@@ -1,0 +1,155 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bike Digital Meter Manager</title>
+<style>
+body{font-family:Arial;margin:0;background:#eef2f5;color:#172b36}
+header{background:#123b52;color:white;padding:18px}
+main{padding:14px;max-width:700px;margin:auto}
+.card{background:white;padding:15px;margin:12px 0;border-radius:12px}
+input,select,textarea,button{box-sizing:border-box;width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #bbb;font-size:16px}
+button{background:#176b87;color:white;border:0;font-weight:bold}
+.secondary{background:#526875}
+.item{border-bottom:1px solid #ddd;padding:12px 0}
+small{color:#526875}
+</style>
+</head>
+<body>
+<header>
+<h2>Bike Digital Meter Manager</h2>
+<p>Customer • Meter • Repair Records</p>
+<button onclick="toggleLang()">മലയാളം / English</button>
+</header>
+<main>
+<div class="card">
+<h3 id="formTitle">Add New Meter</h3>
+<form id="form">
+<input id="name" placeholder="Customer Name" required>
+<input id="phone" placeholder="Mobile Number">
+<input id="bike" placeholder="Bike Model" required>
+<input id="company" placeholder="Meter / PCB Company">
+<input id="fault" placeholder="Fault Details">
+<select id="status">
+<option>Received</option>
+<option>Pending</option>
+<option>Repairing</option>
+<option>Ready</option>
+<option>Delivered</option>
+</select>
+<input id="rack" placeholder="Rack Location">
+<input id="amount" type="number" placeholder="Repair Amount ₹">
+<input id="date" type="date">
+<textarea id="notes" placeholder="Repair Notes"></textarea>
+<button type="submit" id="save">Save Meter</button>
+</form>
+</div>
+<div class="card">
+<h3 id="searchTitle">Search Customer / Meter</h3>
+<input id="search" placeholder="Name, phone, bike, ID or rack">
+<div id="records"></div>
+</div>
+<div class="card">
+<h3>Backup / Restore</h3>
+<button onclick="backup()">Download Backup</button>
+<input type="file" id="restoreFile" accept=".json">
+<button onclick="restore()">Restore Backup</button>
+</div>
+</main>
+<script>
+let records=JSON.parse(localStorage.getItem("meters")||"[]");
+let mal=false;
+const $=id=>document.getElementById(id);
+function saveData(){
+ localStorage.setItem("meters",JSON.stringify(records));
+ showRecords();
+}
+function showRecords(){
+ let q=$("search").value.toLowerCase();
+ $("records").innerHTML="";
+ records.filter(r=>Object.values(r).join(" ").toLowerCase().includes(q))
+ .forEach(r=>{
+  let div=document.createElement("div");
+  div.className="item";
+  let title=document.createElement("b");
+  title.textContent=r.id+" - "+r.name;
+  let details=document.createElement("p");
+  details.textContent="Phone: "+r.phone+" | Bike: "+r.bike+
+  " | Status: "+r.status+" | Rack: "+r.rack;
+  let fault=document.createElement("small");
+  fault.textContent="Fault: "+r.fault;
+  let edit=document.createElement("button");
+  edit.textContent="Edit";
+  edit.onclick=()=>editRecord(r.id);
+  let del=document.createElement("button");
+  del.textContent="Delete";
+  del.className="secondary";
+  del.onclick=()=>{
+   if(confirm("Delete this record?")){
+    records=records.filter(x=>x.id!==r.id);saveData();
+   }
+  };
+  div.append(title,details,fault,edit,del);
+  $("records").append(div);
+ });
+}
+$("form").onsubmit=e=>{
+ e.preventDefault();
+ let id=window.editingId||("DM-"+String(Date.now()).slice(-8));
+ let old=records.find(r=>r.id===id);
+ let data={id,name:$("name").value,phone:$("phone").value,
+ bike:$("bike").value,company:$("company").value,
+ fault:$("fault").value,status:$("status").value,
+ rack:$("rack").value,amount:$("amount").value,
+ date:$("date").value,notes:$("notes").value};
+ if(old)records=records.map(r=>r.id===id?data:r);
+ else records.unshift(data);
+ window.editingId=null;
+ $("form").reset();$("save").textContent="Save Meter";
+ saveData();
+ alert("Meter saved: "+id);
+};
+function editRecord(id){
+ let r=records.find(x=>x.id===id);
+ if(!r)return;
+ window.editingId=id;
+ ["name","phone","bike","company","fault","status","rack","amount","date","notes"]
+ .forEach(k=>$(k).value=r[k]||"");
+ $("save").textContent="Update Meter";
+ window.scrollTo(0,0);
+}
+$("search").oninput=showRecords;
+function backup(){
+ let blob=new Blob([JSON.stringify(records,null,2)],{type:"application/json"});
+ let a=document.createElement("a");
+ a.href=URL.createObjectURL(blob);
+ a.download="BikeMeterBackup.json";a.click();
+ URL.revokeObjectURL(a.href);
+}
+function restore(){
+ let file=$("restoreFile").files[0];
+ if(!file){alert("Choose backup file");return;}
+ let reader=new FileReader();
+ reader.onload=()=>{
+ try{
+ let data=JSON.parse(reader.result);
+ if(!Array.isArray(data))throw Error();
+ if(confirm("Replace current records with backup?")){
+ records=data;saveData();alert("Backup restored");
+ }
+ }catch(e){alert("Invalid backup file");}
+ };
+ reader.readAsText(file);
+}
+function toggleLang(){
+ mal=!mal;
+ $("formTitle").textContent=mal?"പുതിയ മീറ്റർ ചേർക്കുക":"Add New Meter";
+ $("searchTitle").textContent=mal?"കസ്റ്റമറെ തിരയുക":"Search Customer / Meter";
+ $("save").textContent=mal?"സേവ് ചെയ്യുക":"Save Meter";
+}
+showRecords();
+</script>
+</body>
+</html>
