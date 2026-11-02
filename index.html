@@ -62,14 +62,109 @@ img.preview{width:100%;max-height:180px;object-fit:contain;margin-top:8px}
 <button onclick="showQR()">GENERATE QR CODE</button>
 <div id="qrcode"></div>
 </div>
-
+<div class="card">
+<h3>Backup & Restore / ഡാറ്റ ബാക്കപ്പ്</h3>
+<button onclick="backupData()">DOWNLOAD BACKUP</button>
+<label>Restore Backup File</label>
+<input type="file" id="backupFile" accept=".json,application/json">
+<button onclick="restoreData()">RESTORE BACKUP</button>
+<p id="backupMessage"></p>
+</div>
 <div class="card">
 <h3>Search Customer / കസ്റ്റമറെ തിരയുക</h3>
 <input id="search" placeholder="Name, Phone, ID or Bike" oninput="showCustomers()">
 <div id="customers"></div>
 </div>
 </main>
+async function backupData(){
+ try{
+  const all=await getAll();
 
+  const records=await Promise.all(all.map(async c=>{
+   const convert=blob=>new Promise((resolve,reject)=>{
+    if(!blob){resolve(null);return;}
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(reader.error);
+    reader.readAsDataURL(blob);
+   });
+
+   return {
+    ...c,
+    meterPhoto:await convert(c.meterPhoto),
+    pcbPhoto:await convert(c.pcbPhoto)
+   };
+  }));
+
+  const data={
+   app:"Bike Digital Meter Manager",
+   version:1,
+   date:new Date().toISOString(),
+   customers:records
+  };
+
+  const blob=new Blob(
+   [JSON.stringify(data)],
+   {type:"application/json"}
+  );
+
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="BikeMeterBackup.json";
+  a.click();
+  URL.revokeObjectURL(url);
+
+  document.getElementById("backupMessage").innerText=
+   "Backup downloaded successfully!";
+ }catch(e){
+  alert("Backup failed: "+e.message);
+ }
+}
+
+async function restoreData(){
+ const file=document.getElementById("backupFile").files[0];
+ if(!file){alert("Backup file തിരഞ്ഞെടുക്കുക");return;}
+ if(!confirm("Restore ചെയ്യുമ്പോൾ നിലവിലുള്ള ഡാറ്റ മാറ്റപ്പെടും. തുടരട്ടേ?"))return;
+
+ try{
+  const data=JSON.parse(await file.text());
+  if(data.app!=="Bike Digital Meter Manager" ||
+     !Array.isArray(data.customers)){
+   throw new Error("Invalid backup file");
+  }
+
+  const convert=value=>{
+   if(!value)return null;
+   const parts=value.split(",");
+   const mime=parts[0].match(/:(.*?);/)[1];
+   const binary=atob(parts[1]);
+   const bytes=new Uint8Array(binary.length);
+   for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+   return new Blob([bytes],{type:mime});
+  };
+
+  const records=data.customers.map(c=>({
+   ...c,
+   meterPhoto:convert(c.meterPhoto),
+   pcbPhoto:convert(c.pcbPhoto)
+  }));
+
+  const tx=db.transaction("customers","readwrite");
+  const os=tx.objectStore("customers");
+  os.clear();
+  records.forEach(c=>os.put(c));
+
+  tx.oncomplete=()=>{
+   document.getElementById("backupMessage").innerText=
+    "Restore completed!";
+   showCustomers();
+  };
+  tx.onerror=()=>alert("Restore failed");
+ }catch(e){
+  alert("Restore failed: "+e.message);
+ }
+}
 <script>
 const DB_NAME="BikeMeterManagerDB";
 let db;
