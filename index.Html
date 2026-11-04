@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Digital Meter Manager</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+:root {
+ --bg:#080b12;
+ --card:#171e2c;
+ --text:#ffffff;
+ --accent:#d4a62e;
+ --item:#222d40;
+ --input:#101827;
+}
+*{box-sizing:border-box}
+body{
+ margin:0;background:var(--bg);color:var(--text);
+ font-family:Arial,sans-serif;padding:12px;
+}
+header{
+ background:var(--card);padding:18px;border-radius:14px;
+ text-align:center;border-bottom:3px solid var(--accent);
+}
+h2,h3{color:var(--accent)}
+nav{display:flex;flex-wrap:wrap;gap:7px;margin:12px 0}
+button{
+ background:var(--accent);color:#111;border:0;
+ padding:11px 13px;border-radius:8px;
+ font-weight:bold;cursor:pointer;margin:3px;
+}
+input,textarea,select{
+ width:100%;padding:12px;margin:6px 0 12px;
+ border:1px solid var(--accent);border-radius:8px;
+ background:var(--input);color:var(--text);
+ font-size:16px;
+}
+label{color:var(--text);font-weight:bold}
+.panel{
+ background:var(--card);padding:15px;
+ border-radius:12px;margin:12px 0;
+}
+.item{
+ background:var(--item);padding:13px;
+ margin:10px 0;border-radius:10px;
+ border-left:4px solid var(--accent);
+ overflow-wrap:anywhere;
+}
+.item img{
+ width:100%;max-height:200px;object-fit:contain;
+ border-radius:8px;margin-top:8px;
+}
+.small{font-size:13px;opacity:.85}
+.hidden{display:none!important}
+.actions{display:flex;flex-wrap:wrap;gap:4px}
+.actions button{flex:1}
+#zoomBox{
+ display:none;position:fixed;inset:0;background:#000e;
+ z-index:1000;align-items:center;justify-content:center;
+ padding:15px;
+}
+#zoomBox img{max-width:100%;max-height:85vh}
+#zoomBox .close{
+ position:absolute;right:15px;top:15px;
+}
+#qrcode{background:white;padding:10px;display:inline-block}
+.photoGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.photoGrid img{width:100%;height:110px;object-fit:cover}
+.colorGrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+</style>
+</head>
+
+<body>
+
+<header>
+<h2>🚘 DIGITAL METER MANAGER</h2>
+<p>Customer • Meter • PCB • QR • Backup</p>
+</header>
+
+<nav>
+<button onclick="show('home')">Home</button>
+<button onclick="show('add')">+ New Meter</button>
+<button onclick="show('records')">Records</button>
+<button onclick="show('qr')">QR Scanner</button>
+<button onclick="show('backup')">Backup</button>
+<button onclick="show('settings')">Settings</button>
+</nav>
+
+<section id="home" class="panel">
+<h2>Dashboard</h2>
+<div class="item">Total Customers: <b id="total">0</b></div>
+<div class="item">Total Meter Records: <b id="meters">0</b></div>
+<button onclick="show('add')">Add New Customer</button>
+<button onclick="show('records')">View All Records</button>
+</section>
+
+<section id="add" class="panel hidden">
+<h2 id="formTitle">New Customer / Meter</h2>
+<input type="hidden" id="editId">
+
+<label>Customer Name</label>
+<input id="name" placeholder="Customer full name">
+
+<label>Phone Number</label>
+<input id="phone" type="tel" placeholder="Mobile number">
+
+<label>Address</label>
+<textarea id="address" placeholder="Customer address"></textarea>
+
+<label>Vehicle Type</label>
+<select id="vehicle">
+<option>Bike</option><option>Scooter</option>
+<option>Car</option><option>Other</option>
+</select>
+
+<label>Vehicle Brand</label>
+<input id="brand" placeholder="Suzuki / Honda / Bajaj">
+
+<label>Vehicle Model</label>
+<input id="model" placeholder="Vehicle model">
+
+<label>Meter Model / Part Number</label>
+<input id="meter" placeholder="Meter identification">
+
+<label>Serial Number</label>
+<input id="serial" placeholder="Meter serial number">
+
+<label>PCB Details / IC Number</label>
+<textarea id="pcb" placeholder="PCB, IC, component details"></textarea>
+
+<label>Customer Fault / Complaint</label>
+<textarea id="fault" placeholder="Meter fault details"></textarea>
+
+<label>Repair Details</label>
+<textarea id="repair" placeholder="Repair notes"></textarea>
+
+<label>Meter Photo</label>
+<input type="file" id="meterPhoto" accept="image/*" capture="environment">
+
+<label>PCB Photo</label>
+<input type="file" id="pcbPhoto" accept="image/*" capture="environment">
+
+<label>Bag / Other Photo</label>
+<input type="file" id="bagPhoto" accept="image/*" capture="environment">
+
+<div id="oldPhotos"></div>
+
+<button onclick="saveRecord()">SAVE CUSTOMER</button>
+<button onclick="clearForm()">CLEAR</button>
+</section>
+
+<section id="records" class="panel hidden">
+<h2>Customer Records</h2>
+<input id="search" placeholder="Search name / phone / model / QR..."
+oninput="render()">
+<div id="recordList"></div>
+</section>
+
+<section id="qr" class="panel hidden">
+<h2>QR Code Scanner</h2>
+<p>Scan a customer's meter QR code.</p>
+<button onclick="startScan()">OPEN CAMERA SCANNER</button>
+<button onclick="stopScan()">STOP CAMERA</button>
+<div id="reader" style="max-width:100%;margin-top:10px"></div>
+<div id="scanResult"></div>
+<hr>
+<h3>Search using QR / ID</h3>
+<input id="qrSearch" placeholder="Enter QR ID">
+<button onclick="findQR()">SEARCH QR</button>
+</section>
+
+<section id="backup" class="panel hidden">
+<h2>Backup & Restore</h2>
+<p>Keep a backup of all customer records and photos.</p>
+<button onclick="backup()">DOWNLOAD FULL BACKUP</button>
+<button onclick="shareBackup()">SEND BACKUP WHATSAPP</button>
+<label>Restore a JSON backup</label>
+<input type="file" id="restoreFile" accept=".json,application/json">
+<button onclick="restore()">RESTORE DATA</button>
+<p class="small">Restoring replaces the current database. Download a backup first.</p>
+</section>
+
+<section id="settings" class="panel hidden">
+<h2>Appearance Settings</h2>
+<div class="colorGrid">
+<div><label>Background</label><input type="color" id="bgColor" value="#080b12" onchange="setColor('--bg',this.value)"></div>
+<div><label>Font Colour</label><input type="color" id="textColor" value="#ffffff" onchange="setColor('--text',this.value)"></div>
+<div><label>Button / Accent</label><input type="color" id="accentColor" value="#d4a62e" onchange="setColor('--accent',this.value)"></div>
+<div><label>Card Colour</label><input type="color" id="cardColor" value="#171e2c" onchange="setColor('--card',this.value)"></div>
+<div><label>Item Colour</label><input type="color" id="itemColor" value="#222d40" onchange="setColor('--item',this.value)"></div>
+<div><label>Input Colour</label><input type="color" id="inputColor" value="#101827" onchange="setColor('--input',this.value)"></div>
+</div>
+<h3>Customer Details Zoom</h3>
+<button onclick="changeZoom(1)">A+ Zoom In</button>
+<button onclick="changeZoom(-1)">A- Zoom Out</button>
+<button onclick="resetZoom()">Reset Zoom</button>
+</section>
+
+<div id="zoomBox" onclick="closeZoom()">
+<button class="close">CLOSE ✕</button>
+<img id="zoomImage">
+</div>
+
+<div id="qrModal" class="panel hidden">
+<h2>Customer QR Code</h2>
+<div id="qrcode"></div>
+<p id="qrText"></p>
+<button onclick="document.getElementById('qrModal').classList.add('hidden')">Close</button>
+</div>
+
+<script>
+const DB_NAME='DigitalMeterManagerDB';
+const STORE='customers';
+let db;
+let scanner=null;
+let currentZoom=16;
+
+function openDB(){
+ return new Promise((resolve,reject)=>{
+  const req=indexedDB.open(DB_NAME,1);
+  req.onupgradeneeded=()=>{
+   const d=req.result;
+   if(!d.objectStoreNames.contains(STORE)){
+    d.createObjectStore(STORE,{keyPath:'id'});
+   }
+  };
+  req.onsuccess=()=>{db=req.result;resolve()};
+  req.onerror=()=>reject(req.error);
+ });
+}
+
+function allRecords(){
+ return new Promise((resolve,reject)=>{
+  const r=db.transaction(STORE,'readonly').objectStore(STORE).getAll();
+  r.onsuccess=()=>resolve(r.result);
+  r.onerror=()=>reject(r.error);
+ });
+}
+
+function putRecord(data){
+ return new Promise((resolve,reject)=>{
+  const r=db.transaction(STORE,'readwrite').objectStore(STORE).put(data);
+  r.onsuccess=()=>resolve();
+  r.onerror=()=>reject(r.error);
+ });
+}
+
+function deleteRecord(id){
+ return new Promise((resolve,reject)=>{
+  const r=db.transaction(STORE,'readwrite').objectStore(STORE).delete(id);
+  r.onsuccess=()=>resolve();
+  r.onerror=()=>reject(r.error);
+ });
+}
+
+function show(id){
+ document.querySelectorAll('body > section').forEach(s=>s.classList.add('hidden'));
+ document.getElementById(id).classList.remove('hidden');
+ if(id==='records')render();
+ if(id==='home')dashboard();
+}
+
+async function dashboard(){
+ const a=await allRecords();
+ document.getElementById('total').textContent=a.length;
+ document.getElementById('meters').textContent=a.length;
+}
+
+function fileData(file){
+ return new Promise(resolve=>{
+  if(!file){resolve(null);return}
+  const reader=new FileReader();
+  reader.onload=()=>resolve(reader.result);
+  reader.onerror=()=>resolve(null);
+  reader.readAsDataURL(file);
+ });
+}
+
+async function saveRecord(){
+ const id=document.getElementById('editId').value || 'MTR-'+Date.now();
+ const old=(await allRecords()).find(x=>x.id===id)||{};
+
+ const data={
+  id,
+  name:name.value.trim(),
+  phone:phone.value.trim(),
+  address:address.value,
+  vehicle:vehicle.value,
+  brand:brand.value,
+  model:model.value,
+  meter:meter.value,
+  serial:serial.value,
+  pcb:pcb.value,
+  fault:fault.value,
+  repair:repair.value,
+  meterPhoto:await fileData(meterPhoto.files[0]) || old.meterPhoto || null,
+  pcbPhoto:await fileData(pcbPhoto.files[0]) || old.pcbPhoto || null,
+  bagPhoto:await fileData(bagPhoto.files[0]) || old.bagPhoto || null,
+  created:old.created || new Date().toISOString(),
+  updated:new Date().toISOString()
+ };
+
+ if(!data.name){alert('Enter customer name');return}
+ if(!data.phone){alert('Enter phone number');return}
+
+ await putRecord(data);
+ alert('Customer saved successfully');
+ clearForm();
+ await dashboard();
+ show('records');
+}
+
+function clearForm(){
+ document.getElementById('editId').value='';
+ ['name','phone','address','brand','model','meter','serial','pcb','fault','repair']
+ .forEach(id=>document.getElementById(id).value='');
+ ['meterPhoto','pcbPhoto','bagPhoto'].forEach(id=>document.getElementById(id).value='');
+ document.getElementById('formTitle').textContent='New Customer / Meter';
+ document.getElementById('oldPhotos').innerHTML='';
+}
+
+async function render(){
+ const q=document.getElementById('search').value.toLowerCase();
+ const records=await allRecords();
+ const list=document.getElementById('recordList');
+ list.innerHTML='';
+
+ records.filter(r=>Object.values(r).some(v=>
+  typeof v==='string' && v.toLowerCase().includes(q)
+ )).sort((a,b)=>b.updated.localeCompare(a.updated)).forEach(r=>{
+  const div=document.createElement('div');
+  div.className='item';
+
+  const title=document.createElement('h3');
+  title.textContent=r.name;
+  div.appendChild(title);
+
+  const details=[
+   ['Phone',r.phone],['Address',r.address],['Vehicle',r.vehicle],
+   ['Brand',r.brand],['Model',r.model],['Meter',r.meter],
+   ['Serial',r.serial],['PCB / IC',r.pcb],['Fault',r.fault],
+   ['Repair',r.repair],['Record ID',r.id]
+  ];
+  details.forEach(([k,v])=>{
+   if(v){
+    const p=document.createElement('p');
+    p.textContent=k+': '+v;
+    p.style.fontSize=currentZoom+'px';
+    div.appendChild(p);
+   }
+  });
+
+  const photos=document.createElement('div');
+  photos.className='photoGrid';
+  [['Meter',r.meterPhoto],['PCB',r.pcbPhoto],['Bag',r.bagPhoto]].forEach(([label,src])=>{
+   if(src){
+    const box=document.createElement('div');
+    const caption=document.createElement('p');
+    caption.textContent=label;
+    const img=document.createElement('img');
+    img.src=src;
+    img.onclick=()=>zoom(src);
+    box.append(caption,img);
+    photos.appendChild(box);
+   }
+  });
+  div.appendChild(photos);
+
+  const actions=document.createElement('div');
+  actions.className='actions';
+
+  const buttons=[
+   ['EDIT',()=>editRecord(r)],
+   ['QR CODE',()=>makeQR(r)],
+   ['WHATSAPP',()=>sendCustomer(r)],
+   ['DELETE',()=>removeRecord(r.id)]
+  ];
+  buttons.forEach(([label,fn])=>{
+   const b=document.createElement('button');
+   b.textContent=label;
+   b.onclick=fn;
+   actions.appendChild(b);
+  });
+  div.appendChild(actions);
+  list.appendChild(div);
+ });
+}
+
+async function editRecord(r){
+ show('add');
+ document.getElementById('editId').value=r.id;
+ ['name','phone','address','vehicle','brand','model','meter','serial','pcb','fault','repair']
+ .forEach(k=>document.getElementById(k).value=r[k]||'');
+ document.getElementById('formTitle').textContent='Edit Customer / Meter';
+ document.getElementById('oldPhotos').innerHTML=
+  '<p>Existing photos will remain unless replaced.</p>';
+}
+
+async function removeRecord(id){
+ if(confirm('Delete this customer record?')){
+  await deleteRecord(id);
+  render();dashboard();
+ }
+}
+
+function makeQR(r){
+ document.getElementById('qrModal').classList.remove('hidden');
+ document.getElementById('qrcode').innerHTML='';
+ document.getElementById('qrText').textContent=r.id+' - '+r.name;
+ new QRCode(document.getElementById('qrcode'),{
+  text:r.id,width:200,height:200
+ });
+}
+
+function zoom(src){
+ document.getElementById('zoomImage').src=src;
+ document.getElementById('zoomBox').style.display='flex';
+}
+function closeZoom(){
+ document.getElementById('zoomBox').style.display='none';
+}
+
+function changeZoom(n){
+ currentZoom=Math.max(12,Math.min(30,currentZoom+n*2));
+ render();
+}
+function resetZoom(){currentZoom=16;render()}
+
+async function startScan(){
+ if(!window.Html5Qrcode){alert('Scanner library unavailable. Check internet.');return}
+ try{
+  scanner=new Html5Qrcode('reader');
+  await scanner.start(
+   {facingMode:'environment'},
+   {fps:10,qrbox:{width:230,height:230}},
+   async text=>{
+    document.getElementById('scanResult').textContent='Scanned: '+text;
+    await stopScan();
+    const records=await allRecords();
+    const r=records.find(x=>x.id===text);
+    if(r){
+     document.getElementById('search').value=text;
+     show('records');
+     render();
+    }else{
+     alert('Customer not found. QR: '+text);
+    }
+   },
+   ()=>{}
+  );
+ }catch(e){alert('Camera error: '+e)}
+}
+
+async function stopScan(){
+ if(scanner){
+  try{await scanner.stop();scanner.clear()}catch(e){}
+  scanner=null;
+ }
+}
+
+async function findQR(){
+ const id=document.getElementById('qrSearch').value.trim();
+ const r=(await allRecords()).find(x=>x.id===id);
+ if(r){
+  document.getElementById('search').value=id;
+  show('records');
+  render();
+ }else alert('Record not found');
+}
+
+async function backup(){
+ const records=await allRecords();
+ const blob=new Blob([JSON.stringify({
+  app:'Digital Meter Manager',
+  version:1,
+  backupDate:new Date().toISOString(),
+  records
+ },null,2)],{type:'application/json'});
+ downloadBlob(blob,'Digital_Meter_Backup_'+Date.now()+'.json');
+}
+
+function downloadBlob(blob,filename){
+ const url=URL.createObjectURL(blob);
+ const a=document.createElement('a');
+ a.href=url;a.download=filename;a.click();
+ setTimeout(()=>URL.revokeObjectURL(url),3000);
+}
+
+async function shareBackup(){
+ const records=await allRecords();
+ const blob=new Blob([JSON.stringify({
+  app:'Digital Meter Manager',
+  version:1,
+  backupDate:new Date().toISOString(),
+  records
+ },null,2)],{type:'application/json'});
+ const file=new File([blob],'Digital_Meter_Backup.json',{
+  type:'application/json'
+ });
+
+ if(navigator.canShare && navigator.canShare({files:[file]})){
+  try{
+   await navigator.share({
+    title:'Digital Meter Backup',
+    text:'Customer and meter backup file',
+    files:[file]
+   });
+   return;
+  }catch(e){
+   if(e.name==='AbortError')return;
+  }
+ }
+ downloadBlob(blob,file.name);
+ alert('Backup downloaded. Open WhatsApp, select the customer and attach this JSON file from Downloads.');
+}
+
+async function restore(){
+ const file=document.getElementById('restoreFile').files[0];
+ if(!file){alert('Select JSON backup');return}
+ if(!confirm('Restore will replace all current records. Continue?'))return;
+ try{
+  const data=JSON.parse(await file.text());
+  if(!data || !Array.isArray(data.records))throw Error('Invalid backup');
+  const tx=db.transaction(STORE,'readwrite');
+  const store=tx.objectStore(STORE);
+  store.clear();
+  data.records.forEach(r=>store.put(r));
+  tx.oncomplete=()=>{
+   alert('Backup restored successfully');
+   dashboard();render();
+  };
+  tx.onerror=()=>alert('Restore failed');
+ }catch(e){alert('Invalid backup file: '+e.message)}
+}
+
+async function sendCustomer(r){
+ const message=
+ `DIGITAL METER CUSTOMER\nName: ${r.name}\nPhone: ${r.phone}\nVehicle: ${r.vehicle} ${r.brand} ${r.model}\nMeter: ${r.meter}\nSerial: ${r.serial}\nFault: ${r.fault}\nID: ${r.id}`;
+ window.open('https://wa.me/?text='+encodeURIComponent(message),'_blank');
+}
+
+function setColor(variable,value){
+ document.documentElement.style.setProperty(variable,value);
+ const settings={
+  '--bg':'bgColor','--text':'textColor','--accent':'accentColor',
+  '--card':'cardColor','--item':'itemColor','--input':'inputColor'
+ };
+ localStorage.setItem('meterColor_'+variable,value);
+}
+
+function loadColors(){
+ const ids={
+  '--bg':'bgColor','--text':'textColor','--accent':'accentColor',
+  '--card':'cardColor','--item':'itemColor','--input':'inputColor'
+ };
+ Object.entries(ids).forEach(([v,id])=>{
+  const color=localStorage.getItem('meterColor_'+v);
+  if(color){
+   document.documentElement.style.setProperty(v,color);
+   document.getElementById(id).value=color;
+  }
+ });
+}
+
+(async()=>{
+ try{
+  await openDB();
+  loadColors();
+  dashboard();
+ }catch(e){alert('Database error: '+e.message)}
+})();
+</script>
+</body>
+</html>
