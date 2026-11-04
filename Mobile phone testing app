@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101010">
+<title>Mobile Phone Tester</title>
+<style>
+:root{--bg:#101010;--panel:#1d1b17;--gold:#e2b84b;--white:#f5f2e9;--muted:#aaa}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--white);font-family:Arial,sans-serif}
+header{padding:20px 16px;text-align:center;background:#171510;border-bottom:1px solid #80652c}
+h1{color:var(--gold);margin:0 0 8px;font-size:24px}
+header p{color:var(--muted);margin:0;font-size:13px}
+.top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px}
+button{background:var(--gold);color:#17130a;border:0;border-radius:9px;padding:11px 14px;font-weight:bold;cursor:pointer}
+button.secondary{background:#34302a;color:var(--white);border:1px solid #6e592d}
+main{padding:10px 14px 35px;max-width:650px;margin:auto}
+.card{background:var(--panel);border:1px solid #4d4025;border-radius:13px;padding:15px;margin:12px 0}
+h2{font-size:17px;color:var(--gold);margin:0 0 12px}
+p{line-height:1.45}
+.result{color:#d8c99f;font-size:14px;margin-top:10px;white-space:pre-wrap}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+.actions button{flex:1;min-width:110px}
+#touchArea{height:150px;border:2px dashed var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;text-align:center;color:var(--muted);touch-action:none}
+#camera{width:100%;max-height:260px;background:#000;border-radius:10px;margin-top:10px;display:none}
+#micBar{height:15px;background:#39352c;border-radius:10px;overflow:hidden;margin-top:10px}
+#micLevel{height:100%;width:0;background:var(--gold)}
+#colors{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.color{height:85px;border-radius:7px;border:1px solid #777}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:15px}
+small{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+<h1>📱 Mobile Phone Tester</h1>
+<p data-en="Simple phone hardware testing tool" data-ml="മൊബൈൽ ഫോണിന്റെ വിവിധ ഭാഗങ്ങൾ പരിശോധിക്കാം">Simple phone hardware testing tool</p>
+</header>
+
+<div class="top">
+<strong style="color:var(--gold)">BLACK & GOLD</strong>
+<button class="secondary" onclick="toggleLanguage()" id="langBtn">മലയാളം</button>
+</div>
+
+<main>
+<section class="card">
+<h2 data-en="1. Display Test" data-ml="1. ഡിസ്പ്ലേ ടെസ്റ്റ്">1. Display Test</h2>
+<p data-en="Tap each colour to check your screen for unusual pixels or colour problems." data-ml="നിറങ്ങളിൽ തൊട്ട് സ്ക്രീനിലെ പിക്സൽ, നിറ പ്രശ്നങ്ങൾ പരിശോധിക്കുക.">Tap each colour to check your screen for unusual pixels or colour problems.</p>
+<div id="colors">
+<div class="color" style="background:#fff" onclick="showMsg('White screen')"></div>
+<div class="color" style="background:#000" onclick="showMsg('Black screen')"></div>
+<div class="color" style="background:#f00" onclick="showMsg('Red screen')"></div>
+<div class="color" style="background:#0f0" onclick="showMsg('Green screen')"></div>
+<div class="color" style="background:#00f" onclick="showMsg('Blue screen')"></div>
+<div class="color" style="background:#888" onclick="showMsg('Grey screen')"></div>
+</div>
+<div class="result" id="displayResult"></div>
+</section>
+
+<section class="card">
+<h2 data-en="2. Touch & Multi-touch Test" data-ml="2. ടച്ച് / മൾട്ടി ടച്ച് ടെസ്റ്റ്">2. Touch & Multi-touch Test</h2>
+<div id="touchArea">Touch here with one or more fingers</div>
+<div class="result" id="touchResult">Touch count: 0</div>
+</section>
+
+<section class="card">
+<h2 data-en="3. Speaker Test" data-ml="3. സ്പീക്കർ ടെസ്റ്റ്">3. Speaker Test</h2>
+<div class="actions">
+<button onclick="speakerTest()" data-en="Play Test Sound" data-ml="ശബ്ദം പ്ലേ ചെയ്യുക">Play Test Sound</button>
+<button class="secondary" onclick="stopSound()" data-en="Stop" data-ml="നിർത്തുക">Stop</button>
+</div>
+<div class="result" id="speakerResult"></div>
+</section>
+
+<section class="card">
+<h2 data-en="4. Microphone Test" data-ml="4. മൈക്രോഫോൺ ടെസ്റ്റ്">4. Microphone Test</h2>
+<button onclick="micTest()" data-en="Start Microphone Test" data-ml="മൈക്ക് ടെസ്റ്റ് തുടങ്ങുക">Start Microphone Test</button>
+<button class="secondary" onclick="stopMic()" data-en="Stop" data-ml="നിർത്തുക">Stop</button>
+<div id="micBar"><div id="micLevel"></div></div>
+<div class="result" id="micResult"></div>
+</section>
+
+<section class="card">
+<h2 data-en="5. Camera Test" data-ml="5. ക്യാമറ ടെസ്റ്റ്">5. Camera Test</h2>
+<div class="actions">
+<button onclick="cameraTest()" data-en="Open Camera" data-ml="ക്യാമറ തുറക്കുക">Open Camera</button>
+<button class="secondary" onclick="stopCamera()" data-en="Close Camera" data-ml="ക്യാമറ അടയ്ക്കുക">Close Camera</button>
+</div>
+<video id="camera" autoplay playsinline muted></video>
+<div class="result" id="cameraResult"></div>
+</section>
+
+<section class="card">
+<h2 data-en="6. Vibration Test" data-ml="6. വൈബ്രേഷൻ ടെസ്റ്റ്">6. Vibration Test</h2>
+<button onclick="vibrateTest()" data-en="Vibrate Phone" data-ml="ഫോൺ വൈബ്രേറ്റ് ചെയ്യുക">Vibrate Phone</button>
+<div class="result" id="vibrationResult"></div>
+</section>
+
+<section class="card">
+<h2 data-en="7. Battery & Device Information" data-ml="7. ബാറ്ററി / ഫോൺ വിവരങ്ങൾ">7. Battery & Device Information</h2>
+<button onclick="getDeviceInfo()" data-en="Check Phone Info" data-ml="ഫോൺ വിവരങ്ങൾ പരിശോധിക്കുക">Check Phone Info</button>
+<div class="result" id="deviceResult">Press the button to check available information.</div>
+</section>
+
+<section class="card">
+<h2 data-en="8. Network & Storage" data-ml="8. നെറ്റ്‌വർക്ക് / സ്റ്റോറേജ്">8. Network & Storage</h2>
+<button onclick="getNetworkInfo()" data-en="Check Network" data-ml="നെറ്റ്‌വർക്ക് പരിശോധിക്കുക">Check Network</button>
+<button class="secondary" onclick="getStorageInfo()" data-en="Check Storage" data-ml="സ്റ്റോറേജ് പരിശോധിക്കുക">Check Storage</button>
+<div class="result" id="networkResult"></div>
+<div class="result" id="storageResult"></div>
+</section>
+
+<section class="card">
+<h2 data-en="9. Flashlight" data-ml="9. ഫ്ലാഷ് ലൈറ്റ്">9. Flashlight</h2>
+<p data-en="Flashlight control is not supported by every browser. Use your phone's quick settings to test the flash." data-ml="എല്ലാ ബ്രൗസറുകളിലും ഫ്ലാഷ് നിയന്ത്രണം ലഭ്യമല്ല. ഫോണിലെ Quick Settings ഉപയോഗിച്ച് പരിശോധിക്കുക.">Flashlight control is not supported by every browser. Use your phone's quick settings to test the flash.</p>
+</section>
+
+<section class="card">
+<h2 data-en="10. Test Notes" data-ml="10. പരിശോധന കുറിപ്പുകൾ">10. Test Notes</h2>
+<textarea id="notes" rows="4" style="width:100%;background:#29251d;color:white;border:1px solid #80652c;border-radius:8px;padding:10px" placeholder="Enter test results / പരിശോധനാ വിവരങ്ങൾ"></textarea>
+<button style="margin-top:9px" onclick="saveNotes()" data-en="Save Notes on This Phone" data-ml="കുറിപ്പുകൾ ഫോണിൽ സൂക്ഷിക്കുക">Save Notes on This Phone</button>
+<div class="result" id="notesResult"></div>
+</section>
+</main>
+<footer>Mobile Phone Tester • Use tests carefully</footer>
+
+<script>
+let language="en", audioContext=null, oscillator=null, micStream=null, micFrame=null, cameraStream=null;
+function toggleLanguage(){
+ language=language==="en"?"ml":"en";
+ document.querySelectorAll("[data-en]").forEach(el=>el.textContent=el.dataset[language]);
+ document.getElementById("langBtn").textContent=language==="en"?"മലയാളം":"English";
+}
+function showMsg(msg){document.getElementById("displayResult").textContent=msg+" — check the screen visually."}
+
+const touchArea=document.getElementById("touchArea");
+let activeTouches=0;
+touchArea.addEventListener("pointerdown",e=>{touchArea.setPointerCapture(e.pointerId);activeTouches++;updateTouch()});
+touchArea.addEventListener("pointerup",()=>{activeTouches=Math.max(0,activeTouches-1);updateTouch()});
+touchArea.addEventListener("pointercancel",()=>{activeTouches=Math.max(0,activeTouches-1);updateTouch()});
+function updateTouch(){document.getElementById("touchResult").textContent="Active touch points: "+activeTouches}
+
+function speakerTest(){
+ try{
+ stopSound();
+ audioContext=new (window.AudioContext||window.webkitAudioContext)();
+ oscillator=audioContext.createOscillator();
+ let gain=audioContext.createGain();
+ oscillator.type="sine";oscillator.frequency.value=700;
+ gain.gain.value=0.15;
+ oscillator.connect(gain);gain.connect(audioContext.destination);
+ oscillator.start();
+ document.getElementById("speakerResult").textContent="Playing test tone. Check whether you can hear it.";
+ setTimeout(stopSound,1500);
+ }catch(e){document.getElementById("speakerResult").textContent="Audio test unavailable: "+e.message}
+}
+function stopSound(){try{if(oscillator){oscillator.stop();oscillator=null}if(audioContext){audioContext.close();audioContext=null}}catch(e){}}
+
+async function micTest(){
+ try{
+ stopMic();
+ micStream=await navigator.mediaDevices.getUserMedia({audio:true});
+ const ctx=new AudioContext(), source=ctx.createMediaStreamSource(micStream), analyser=ctx.createAnalyser();
+ source.connect(analyser);analyser.fftSize=256;
+ const data=new Uint8Array(analyser.frequencyBinCount);
+ function draw(){
+  analyser.getByteTimeDomainData(data);
+  let sum=0;for(let v of data)sum+=Math.abs(v-128);
+  let level=Math.min(100,Math.round(sum/data.length*3));
+  document.getElementById("micLevel").style.width=level+"%";
+  micFrame=requestAnimationFrame(draw);
+ }
+ draw();window.micAudioContext=ctx;
+ document.getElementById("micResult").textContent="Microphone active. Speak and watch the level.";
+ }catch(e){document.getElementById("micResult").textContent="Microphone permission/error: "+e.message}
+}
+function stopMic(){
+ if(micFrame)cancelAnimationFrame(micFrame);
+ if(micStream)micStream.getTracks().forEach(t=>t.stop());
+ if(window.micAudioContext)window.micAudioContext.close();
+ micStream=null;micFrame=null;
+ document.getElementById("micLevel").style.width="0%";
+}
+async function cameraTest(){
+ try{
+ stopCamera();
+ cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:false});
+ const video=document.getElementById("camera");video.srcObject=cameraStream;video.style.display="block";
+ document.getElementById("cameraResult").textContent="Camera opened. Check the preview.";
+ }catch(e){document.getElementById("cameraResult").textContent="Camera permission/error: "+e.message}
+}
+function stopCamera(){
+ if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());
+ cameraStream=null;document.getElementById("camera").style.display="none";
+}
+function vibrateTest(){
+ if(navigator.vibrate){navigator.vibrate([300,150,300]);document.getElementById("vibrationResult").textContent="Vibration command sent."}
+ else document.getElementById("vibrationResult").textContent="Vibration is not supported in this browser."
+}
+async function getDeviceInfo(){
+ let out="Device: "+navigator.userAgent+"\nScreen: "+screen.width+" × "+screen.height+"\nPixel ratio: "+devicePixelRatio;
+ try{
+  if(navigator.getBattery){
+   let b=await navigator.getBattery();
+   out+="\nBattery level: "+Math.round(b.level*100)+"%\nCharging: "+(b.charging?"Yes":"No");
+  }else out+="\nBattery details: Not available in this browser.";
+ }catch(e){}
+ document.getElementById("deviceResult").textContent=out;
+}
+function getNetworkInfo(){
+ let c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+ document.getElementById("networkResult").textContent=c?
+ "Connection: "+(c.effectiveType||"Unknown")+"\nDownlink: "+(c.downlink||"Unknown")+" Mbps":
+ "Network details are not provided by this browser.";
+}
+async function getStorageInfo(){
+ try{
+  let s=await navigator.storage.estimate();
+  document.getElementById("storageResult").textContent=
+  "Storage used: "+(s.usage/1048576).toFixed(1)+" MB\n"+
+  "Available quota: "+(s.quota/1048576).toFixed(1)+" MB";
+ }catch(e){document.getElementById("storageResult").textContent="Storage information unavailable."}
+}
+function saveNotes(){
+ try{
+  localStorage.setItem("phoneTesterNotes",document.getElementById("notes").value);
+  document.getElementById("notesResult").textContent="Notes saved in this browser on this phone.";
+ }catch(e){document.getElementById("notesResult").textContent="Could not save notes."}
+}
+document.getElementById("notes").value=localStorage.getItem("phoneTesterNotes")||"";
+</script>
+</body>
+</html>
