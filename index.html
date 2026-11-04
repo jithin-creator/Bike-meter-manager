@@ -1,396 +1,261 @@
-
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bike Digital Meter Manager</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://unpkg.com/html5-qrcode"></script>
-
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#090909">
+<title>JJ METER SERVICE 🪄</title>
 <style>
+:root {
+--bg:#101010;
+--panel:#1b1a17;
+--gold:#d6ad52;
+--gold2:#f1d58a;
+--text:#f4ead2;
+--muted:#b9ad91;
+--line:#594727;
+}
 *{box-sizing:border-box}
-body{font-family:Arial;background:#eef2f7;color:#172033;margin:0}
-header{background:#123d65;color:white;text-align:center;padding:18px}
-main{max-width:700px;margin:auto;padding:12px}
-.card{background:white;padding:15px;margin:12px 0;border-radius:12px;box-shadow:0 2px 8px #0001}
-input,textarea,button{width:100%;padding:12px;margin:6px 0;border:1px solid #bbb;border-radius:7px;font-size:16px}
-button{background:#145b91;color:white;border:0;font-weight:bold}
-.green{background:#16834b}
-.red{background:#b52c35}
-.grey{background:#526579}
-label{display:block;margin-top:12px;font-weight:bold}
-.customer{border-top:1px solid #ddd;padding:12px 0}
-.photo{width:100%;max-height:200px;object-fit:contain;margin:5px 0}
-#qrcode{display:flex;justify-content:center;margin:15px}
-#reader{width:100%;margin-top:10px}
-.small{font-size:13px;color:#555}
+html{color-scheme:dark}
+body{
+margin:0;
+background:linear-gradient(180deg,#080808,#17140e);
+color:var(--text);
+font:15px system-ui,Arial,sans-serif;
+}
+header{
+background:linear-gradient(135deg,#050505,#292012);
+color:var(--gold2);
+padding:18px 16px;
+position:sticky;
+top:0;
+z-index:5;
+border-bottom:1px solid #72551e;
+box-shadow:0 3px 14px #0009;
+}
+h1{font-size:19px;margin:0 0 5px}
+header small{color:#d7c59b}
+main{max-width:850px;margin:auto;padding:14px}
+.tabs{display:flex;gap:7px;overflow:auto;margin-bottom:13px}
+button{
+border:1px solid #6c5325;
+border-radius:11px;
+padding:11px 13px;
+font:600 14px system-ui;
+cursor:pointer;
+}
+.tab{background:#211d14;color:#e7d3a5;white-space:nowrap}
+.tab.active{
+background:linear-gradient(135deg,#d8b45c,#9c7022);
+color:#17120a;
+}
+.btn{
+background:linear-gradient(135deg,#e0bd68,#a87925);
+color:#17120a;
+border-color:#f0d58c;
+}
+.btn.secondary{background:#29251c;color:#f0dcae}
+.btn.danger{background:#792c27;color:white}
+.btn.green{background:#286b4b;color:white}
+.card{
+background:linear-gradient(160deg,#201e19,#171614);
+border:1px solid #514124;
+border-radius:16px;
+padding:15px;
+margin-bottom:13px;
+box-shadow:0 5px 16px #0005;
+}
+h2,h3{color:var(--gold2)}
+label{
+display:block;
+font-size:12px;
+color:#d5bd83;
+font-weight:700;
+margin:2px 0 6px;
+}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.full{grid-column:1/-1}
+input,select,textarea{
+width:100%;
+padding:12px;
+border:1px solid #66522d;
+border-radius:10px;
+background:#111;
+color:#fff0cf;
+font:15px system-ui;
+min-width:0;
+}
+input:focus,select:focus,textarea:focus{
+border-color:#e0b84f;
+outline:none;
+}
+input::placeholder,textarea::placeholder{color:#9c927e}
+textarea{min-height:82px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.hidden{display:none!important}
+.muted{color:var(--muted);font-size:13px}
+.record{
+display:grid;
+grid-template-columns:76px 1fr auto;
+gap:11px;
+align-items:center;
+}
+.thumb{
+width:76px;height:76px;
+object-fit:cover;
+border-radius:10px;
+background:#302b20;
+}
+.status{
+display:inline-block;
+border-radius:20px;
+background:#47391e;
+color:#f5d98f;
+border:1px solid #82652c;
+padding:4px 9px;
+font-size:11px;
+font-weight:750;
+}
+.qrbox{display:flex;gap:15px;align-items:center;flex-wrap:wrap}
+.qrbox canvas{
+width:132px;height:132px;
+image-rendering:pixelated;
+border:8px solid white;
+}
+.photo-grid{display:flex;gap:8px;flex-wrap:wrap}
+.photo-grid img{
+width:90px;height:90px;
+object-fit:cover;
+border-radius:9px;
+border:1px solid #765d2e;
+}
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{
+background:linear-gradient(145deg,#302716,#211c12);
+border:1px solid #6b5124;
+padding:12px;border-radius:12px;
+}
+.stat b{display:block;font-size:21px;color:var(--gold2)}
+.notice{
+background:#2a2110;
+border:1px solid #806126;
+color:#f1dca9;
+border-radius:11px;
+padding:12px;
+font-size:13px;
+line-height:1.55;
+}
+hr{border:0;border-top:1px solid #594727}
+#toast{
+position:fixed;bottom:18px;left:50%;
+transform:translateX(-50%);
+background:#e0bd68;color:#17120a;
+padding:11px 16px;border-radius:11px;
+display:none;z-index:30;
+max-width:90%;font-weight:700;
+}
+.dialog-backdrop{
+position:fixed;inset:0;background:#000b;
+display:flex;align-items:center;
+justify-content:center;padding:20px;z-index:50;
+}
+.dialog-box{
+width:min(100%,390px);
+background:linear-gradient(145deg,#262116,#141310);
+border:1px solid #bd9140;
+border-radius:18px;padding:20px;
+box-shadow:0 18px 55px #000c;
+color:#f7e8c3;
+}
+.dialog-box h3{color:#f0cf7b}
+.dialog-box p{color:#e0d2b1;line-height:1.5}
+.dialog-actions{display:flex;justify-content:flex-end;gap:9px}
+@media(max-width:520px){
+.grid{grid-template-columns:1fr}
+.record{grid-template-columns:60px 1fr}
+.record .record-actions{grid-column:2}
+.thumb{width:60px;height:60px}
+main{padding:11px}
+}
+@media print{
+header,.tabs,.no-print,button{display:none!important}
+body{background:white;color:#111}
+}
 </style>
 </head>
-
 <body>
+
 <header>
-<h2>Bike Digital Meter Manager</h2>
-<p>ബൈക്ക് ഡിജിറ്റൽ മീറ്റർ കസ്റ്റമർ മാനേജർ</p>
+<h1>Bike Digital Meter Manager</h1>
+<small>Customer • QR • Photos • Offline records</small>
 </header>
 
 <main>
-
-<div class="card">
-<h3>Customer / കസ്റ്റമർ വിവരങ്ങൾ</h3>
-
-<input id="name" placeholder="Customer Name / പേര്">
-<input id="phone" placeholder="Mobile Number / മൊബൈൽ നമ്പർ" type="tel">
-<input id="bike" placeholder="Bike Model / ബൈക്ക് മോഡൽ">
-<input id="meter" placeholder="Meter Model / മീറ്റർ മോഡൽ">
-<input id="pcb" placeholder="PCB Company / PCB കമ്പനി">
-<input id="pcbno" placeholder="PCB Number / PCB നമ്പർ">
-<input id="ic" placeholder="Main IC Number / IC നമ്പർ">
-<input id="fault" placeholder="Repair Fault / തകരാർ">
-<input id="rack" placeholder="Rack Location / റാക്ക് സ്ഥലം">
-<input id="amount" type="number" placeholder="Repair Amount / റിപ്പയർ തുക">
-<textarea id="notes" placeholder="Repair Notes / റിപ്പയർ കുറിപ്പുകൾ"></textarea>
-
-<label>Meter Photo / മീറ്റർ ഫോട്ടോ</label>
-<input id="meterPhoto" type="file" accept="image/*" capture="environment">
-
-<label>PCB Photo / PCB ഫോട്ടോ</label>
-<input id="pcbPhoto" type="file" accept="image/*" capture="environment">
-
-<button onclick="saveCustomer()">SAVE CUSTOMER / സേവ് ചെയ്യുക</button>
-<p id="message"></p>
+<div class="tabs no-print">
+<button class="tab active" data-tab="home" id="tHome">Home</button>
+<button class="tab" data-tab="add" id="tAdd">+ Add Meter</button>
+<button class="tab" data-tab="search" id="tSearch">Search</button>
+<button class="tab" data-tab="backup" id="tBackup">Backup</button>
+<button class="tab" id="langBtn">മലയാളം</button>
 </div>
 
-<div class="card">
-<h3>QR Scanner / QR സ്കാനർ</h3>
-<button onclick="startScanner()">OPEN CAMERA & SCAN QR</button>
-<div id="reader"></div>
-<button class="grey" onclick="stopScanner()">STOP CAMERA</button>
-<p id="scanMessage" class="small">QR സ്കാൻ ചെയ്യാൻ ക്യാമറ അനുവദിക്കുക.</p>
+<section id="home" class="page">
+<div class="statrow card">
+<div class="stat"><b id="totalCount">0</b><span id="lblTotal">Total</span></div>
+<div class="stat"><b id="pendingCount">0</b><span id="lblPending">Pending</span></div>
+<div class="stat"><b id="readyCount">0</b><span id="lblReady">Ready</span></div>
 </div>
-
 <div class="card">
-<h3>Generate Customer QR / QR ഉണ്ടാക്കുക</h3>
-<input id="qrId" placeholder="Customer ID">
-<button onclick="showQR()">GENERATE QR CODE</button>
-<div id="qrcode"></div>
+<h3 id="recentTitle">Recent meters</h3>
+<div id="recentList" class="muted">No records yet. Tap Add Meter.</div>
 </div>
+<div class="notice">
+Important: Records and photos are stored in this browser on this phone. Export a backup regularly.
+</div>
+</section>
 
+<section id="add" class="page hidden">
 <div class="card">
-<h3>Search Customer / കസ്റ്റമറെ തിരയുക</h3>
-<input id="search" placeholder="Name / Phone / ID / Bike" oninput="showCustomers()">
-<div id="customers"></div>
+<h3 id="formTitle">Add customer meter</h3>
+<form id="meterForm">
+<input type="hidden" id="editId">
+<div class="grid">
+<div><label id="lName">Customer name *</label><input id="name" required maxlength="70"></div>
+<div><label id="lPhone">Mobile number</label><input id="phone" inputmode="tel" maxlength="20"></div>
+<div><label id="lBike">Bike model *</label><input id="bike" required placeholder="e.g. Pulsar 150"></div>
+<div><label id="lCompany">Meter / PCB company</label><input id="company" placeholder="e.g. Varroc"></div>
+<div><label id="lFault">Reported fault</label><input id="fault" placeholder="e.g. Display blank"></div>
+<div>
+<label id="lStatus">Repair status</label>
+<select id="status">
+<option value="Received">Received</option>
+<option value="Pending">Pending</option>
+<option value="Repairing">Repairing</option>
+<option value="Ready">Ready</option>
+<option value="Delivered">Delivered</option>
+</select>
 </div>
-
-<div class="card">
-<h3>Backup & Restore / ഡാറ്റ ബാക്കപ്പ്</h3>
-<button class="green" onclick="backupData()">DOWNLOAD FULL BACKUP</button>
-<label>Choose Backup File / ബാക്കപ്പ് ഫയൽ തിരഞ്ഞെടുക്കുക</label>
-<input type="file" id="backupFile" accept=".json,application/json">
-<button onclick="restoreData()">RESTORE BACKUP</button>
-<p id="backupMessage" class="small"></p>
+<div><label id="lRack">Rack / box location</label><input id="rack" placeholder="e.g. A-01"></div>
+<div><label id="lAmount">Amount (₹)</label><input id="amount" type="number" min="0" step="0.01"></div>
+<div><label id="lDate">Received date</label><input id="date" type="date"></div>
+<div class="full">
+<label id="lPhotos">Meter / PCB photos (multiple)</label>
+<input id="photos" type="file" accept="image/*" capture="environment" multiple>
+<div class="muted" id="photoHelp">Photos are compressed before saving.</div>
+<div id="photoPreview" class="photo-grid"></div>
 </div>
-
-</main>
-
-<script>
-const DB_NAME="BikeMeterManagerComplete";
-let db;
-let scanner=null;
-
-function openDB(){
- return new Promise((resolve,reject)=>{
-  const r=indexedDB.open(DB_NAME,1);
-  r.onupgradeneeded=()=>{
-   const d=r.result;
-   d.createObjectStore("customers",{keyPath:"id"});
-  };
-  r.onsuccess=()=>{db=r.result;resolve()};
-  r.onerror=()=>reject(r.error);
- });
-}
-
-function getAll(){
- return new Promise((resolve,reject)=>{
-  const r=db.transaction("customers").objectStore("customers").getAll();
-  r.onsuccess=()=>resolve(r.result);
-  r.onerror=()=>reject(r.error);
- });
-}
-
-function nextId(all){
- let max=0;
- all.forEach(c=>{
-  const n=parseInt((c.id||"").replace("DM-",""),10);
-  if(Number.isFinite(n)&&n>max)max=n;
- });
- return "DM-"+String(max+1).padStart(6,"0");
-}
-
-function readFile(input){
- return input.files[0]||null;
-}
-
-async function saveCustomer(){
- const name=document.getElementById("name").value.trim();
- if(!name){alert("Customer Name നൽകുക");return;}
-
- try{
-  const all=await getAll();
-  const id=nextId(all);
-
-  const customer={
-   id,
-   name,
-   phone:phone.value,
-   bike:bike.value,
-   meter:meter.value,
-   pcb:pcb.value,
-   pcbno:pcbno.value,
-   ic:ic.value,
-   fault:fault.value,
-   rack:rack.value,
-   amount:amount.value,
-   notes:notes.value,
-   date:new Date().toISOString(),
-   meterPhoto:readFile(meterPhoto),
-   pcbPhoto:readFile(pcbPhoto)
-  };
-
-  const tx=db.transaction("customers","readwrite");
-  tx.objectStore("customers").add(customer);
-
-  tx.oncomplete=()=>{
-   message.textContent="Saved! Customer ID: "+id;
-   qrId.value=id;
-   document.querySelectorAll(
-    "#name,#phone,#bike,#meter,#pcb,#pcbno,#ic,#fault,#rack,#amount,#notes,#meterPhoto,#pcbPhoto"
-   ).forEach(x=>x.value="");
-   showCustomers();
-   showQR();
-  };
-  tx.onerror=()=>alert("Save failed");
- }catch(e){alert("Error: "+e.message);}
-}
-
-async function showCustomers(){
- const all=await getAll();
- const q=document.getElementById("search").value.toLowerCase();
- const box=document.getElementById("customers");
- box.innerHTML="";
-
- all.filter(c=>
-  [c.id,c.name,c.phone,c.bike,c.meter,c.pcb,c.fault]
-  .some(v=>String(v||"").toLowerCase().includes(q))
- ).reverse().forEach(c=>{
-  const div=document.createElement("div");
-  div.className="customer";
-
-  const heading=document.createElement("h3");
-  heading.textContent=c.id+" - "+c.name;
-  div.appendChild(heading);
-
-  const info=document.createElement("p");
-  info.textContent=
-   "Phone: "+c.phone+
-   " | Bike: "+c.bike+
-   " | Meter: "+c.meter+
-   " | PCB: "+c.pcb+
-   " | PCB No: "+c.pcbno+
-   " | IC: "+c.ic+
-   " | Fault: "+c.fault+
-   " | Rack: "+c.rack+
-   " | Amount: "+c.amount+
-   " | Notes: "+c.notes;
-  div.appendChild(info);
-
-  if(c.meterPhoto){
-   const img=document.createElement("img");
-   img.className="photo";
-   img.src=URL.createObjectURL(c.meterPhoto);
-   div.appendChild(img);
-  }
-
-  if(c.pcbPhoto){
-   const img=document.createElement("img");
-   img.className="photo";
-   img.src=URL.createObjectURL(c.pcbPhoto);
-   div.appendChild(img);
-  }
-
-  const qr=document.createElement("button");
-  qr.textContent="SHOW QR";
-  qr.onclick=()=>{
-   qrId.value=c.id;
-   showQR();
-   window.scrollTo({top:0,behavior:"smooth"});
-  };
-  div.appendChild(qr);
-
-  const del=document.createElement("button");
-  del.className="red";
-  del.textContent="DELETE CUSTOMER";
-  del.onclick=()=>deleteCustomer(c.id);
-  div.appendChild(del);
-
-  box.appendChild(div);
- });
-}
-
-function deleteCustomer(id){
- if(!confirm("Delete this customer?"))return;
- const tx=db.transaction("customers","readwrite");
- tx.objectStore("customers").delete(id);
- tx.oncomplete=showCustomers;
-}
-
-function showQR(){
- const id=document.getElementById("qrId").value.trim();
- if(!id){alert("Customer ID നൽകുക");return;}
-
- const box=document.getElementById("qrcode");
- box.innerHTML="";
-
- if(typeof QRCode==="undefined"){
-  box.textContent="QR library needs internet.";
-  return;
- }
- new QRCode(box,{text:id,width:200,height:200});
-}
-
-async function startScanner(){
- const msg=document.getElementById("scanMessage");
- if(!window.Html5Qrcode){
-  msg.textContent="QR scanner library load ആയില്ല. Internet പരിശോധിക്കുക.";
-  return;
- }
-
- try{
-  if(scanner)await stopScanner();
-
-  scanner=new Html5Qrcode("reader");
-
-  await scanner.start(
-   {facingMode:"environment"},
-   {fps:10,qrbox:{width:230,height:230}},
-   async text=>{
-    document.getElementById("search").value=text;
-    msg.textContent="Scanned: "+text;
-    await stopScanner();
-    showCustomers();
-   },
-   ()=>{}
-  );
-  msg.textContent="Camera started. QR കാണിക്കുക.";
- }catch(e){
-  msg.textContent="Camera error: "+e;
- }
-}
-
-async function stopScanner(){
- if(scanner){
-  try{
-   if(scanner.isScanning)await scanner.stop();
-   scanner.clear();
-  }catch(e){}
-  scanner=null;
- }
-}
-
-function blobToData(blob){
- return new Promise((resolve,reject)=>{
-  if(!blob){resolve(null);return;}
-  const reader=new FileReader();
-  reader.onload=()=>resolve(reader.result);
-  reader.onerror=()=>reject(reader.error);
-  reader.readAsDataURL(blob);
- });
-}
-
-function dataToBlob(data){
- if(!data)return null;
- const parts=data.split(",");
- const mime=parts[0].match(/:(.*?);/)[1];
- const binary=atob(parts[1]);
- const bytes=new Uint8Array(binary.length);
- for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
- return new Blob([bytes],{type:mime});
-}
-
-async function backupData(){
- try{
-  const all=await getAll();
-  const records=[];
-
-  for(const c of all){
-   records.push({
-    ...c,
-    meterPhoto:await blobToData(c.meterPhoto),
-    pcbPhoto:await blobToData(c.pcbPhoto)
-   });
-  }
-
-  const backup={
-   app:"Bike Digital Meter Manager",
-   version:1,
-   date:new Date().toISOString(),
-   customers:records
-  };
-
-  const blob=new Blob(
-   [JSON.stringify(backup)],
-   {type:"application/json"}
-  );
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement("a");
-  a.href=url;
-  a.download="BikeMeterBackup-"+new Date().toISOString().slice(0,10)+".json";
-  a.click();
-  setTimeout(()=>URL.revokeObjectURL(url),3000);
-
-  backupMessage.textContent="Backup downloaded successfully!";
- }catch(e){
-  alert("Backup failed: "+e.message);
- }
-}
-
-async function restoreData(){
- const file=document.getElementById("backupFile").files[0];
- if(!file){alert("Backup file തിരഞ്ഞെടുക്കുക");return;}
- if(!confirm("Restore ചെയ്യുമ്പോൾ ഇപ്പോഴുള്ള ഡാറ്റ മുഴുവനും മാറ്റപ്പെടും. ആദ്യം അതിന്റെ Backup എടുത്തിട്ടുണ്ടോ?"))return;
-
- try{
-  const data=JSON.parse(await file.text());
-  if(data.app!=="Bike Digital Meter Manager"||
-     !Array.isArray(data.customers)){
-   throw new Error("Invalid backup file");
-  }
-
-  const records=data.customers.map(c=>({
-   ...c,
-   meterPhoto:dataToBlob(c.meterPhoto),
-   pcbPhoto:dataToBlob(c.pcbPhoto)
-  }));
-
-  const tx=db.transaction("customers","readwrite");
-  const os=tx.objectStore("customers");
-  os.clear();
-  records.forEach(c=>os.put(c));
-
-  tx.oncomplete=()=>{
-   backupMessage.textContent="Restore completed!";
-   showCustomers();
-  };
-  tx.onerror=()=>alert("Restore failed");
- }catch(e){
-  alert("Restore failed: "+e.message);
- }
-}
-
-openDB().then(showCustomers).catch(e=>{
- alert("Database error: "+e.message);
-});
-</script>
-</body>
-</html>
+<div class="full">
+<label id="lNotes">Repair notes</label>
+<textarea id="notes"></textarea>
+</div>
+</div>
+<div class="actions">
+<button class="btn" type="submit" id="saveBtn">Save meter</button>
+<button class="btn secondary" type="button" id="clearBtn">Clear</button>
+</div>
+</form>
+</div>
+<div class="notice" id="idNote">
+A unique Meter ID is created automatically. QR label contains only the Meter ID.
+</div>
+</section>
